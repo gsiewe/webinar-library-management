@@ -1,0 +1,58 @@
+server:
+  forward-headers-strategy: framework
+  max-http-request-header-size: 20KB # to prevent HTTP 400 caused by huge headers; limited by CloudFront: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-limits.html
+  tomcat:
+    keep-alive-timeout: 128s # the keep-alive-timeout should be bigger than the LB's idle timeout; infinity allows a max value of 120s: https://docs.cloud.scout24.com/products/infinity/infinity-service-resource/#loadbalancerconnectionidletimeout
+  port: 8080
+
+spring:
+  jpa:
+    open-in-view: false
+  application.name: library-service
+  main.banner-mode: off
+  flyway:
+    enabled: true
+    table: schema_version
+    placeholders.database-name: ${DB_NAME}
+    placeholders.db-app-user-name: ${spring.datasource.username}
+    url: jdbc:postgresql://${DB_ADDRESS}:5432/postgres?currentSchema=${DB_NAME}
+    password: ${spring.datasource.password}
+    user: ${spring.datasource.username}
+    locations: classpath:db/migrations
+  datasource:
+    driver-class-name: 'org.postgresql.Driver'
+    validationQuery: 'SELECT 1'
+    username: postgres
+    password: postgres
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
+      sqs:
+        enabled: true
+      sns:
+        enabled: true
+
+# AWS Configuration
+aws:
+  credentials:
+    access-key: ${AWS_ACCESS_KEY:test}
+    secret-key: ${AWS_SECRET_KEY:test}
+  region:
+    static: eu-west-1
+    auto: false
+  sns:
+    topics:
+      inventory: ${AWS_SNS_INVENTORY_TOPIC:arn:aws:sns:eu-west-1:000000000000:inventory-events}
+      loan: ${AWS_SNS_LOAN_TOPIC:arn:aws:sns:eu-west-1:000000000000:loan-events}
+      fine: ${AWS_SNS_FINE_TOPIC:arn:aws:sns:eu-west-1:000000000000:fine-events}
+  sqs:
+    queues:
+      inventory: ${AWS_SQS_INVENTORY_QUEUE:https://sqs.eu-west-1.amazonaws.com/000000000000/inventory-queue}
+      loan: ${AWS_SQS_LOAN_QUEUE:https://sqs.eu-west-1.amazonaws.com/000000000000/loan-queue}
+      fine: ${AWS_SQS_FINE_QUEUE:https://sqs.eu-west-1.amazonaws.com/000000000000/fine-queue}
+    listener:
+      auto-startup: ${AWS_SQS_LISTENER_AUTO_STARTUP:false}
+      max-number-of-messages: 10
+      wait-time-seconds: 20
+      visibility-timeout: 60

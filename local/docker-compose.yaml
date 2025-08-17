@@ -1,0 +1,20 @@
+services:
+
+  db:
+    image: postgres:14.9
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
+  localstack:
+    platform: linux/x86_64
+    image: localstack/localstack:3.8
+    environment:
+      SERVICES: sqs, sns
+      DEFAULT_REGION: eu-west-1
+      EDGE_PORT: 4566
+      DEBUG: 1
+    ports:
+      - 4566:4566
+    volumes:
+      - "./docker-entrypoint-initaws.d/init.sh:/etc/localstack/init/ready.d/init-aws.sh"  # ready hook

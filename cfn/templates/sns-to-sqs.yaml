@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: SQS queue and SNS subscription
+
+Parameters:
+  TopicArn:
+    Description: ARN of the topic to subscribe to
+    Type: String
+    MinLength: "26"
+    MaxLength: "100"
+    AllowedPattern: "[a-zA-Z0-9\\-:\\.]*"
+  TopicRegion:
+    Type: String
+    Default: eu-central-1
+  QueueName:
+    Description: Name of queue to create for the subscription (should be prefixed with stage)
+    Type: String
+
+Resources:
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Ref QueueName
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      VisibilityTimeout: 60
+      SqsManagedSseEnabled: true
+      KmsDataKeyReusePeriodSeconds: 3600
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 604800 # 1 week
+      QueueName: !Join [ -, [ !Ref QueueName, 'dlq' ] ]
+      SqsManagedSseEnabled: true
+      KmsDataKeyReusePeriodSeconds: 3600 # 1 hour
+
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Sid: Allow-Service-ReceiveMessage
+            Effect: Allow
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:ReceiveMessage
+              - sqs:GetQueueUrl
+            Principal:
+              Service: sns.amazonaws.com
+            Resource: !GetAtt Queue.Arn
+          - Sid: Allow-SNS-SendMessage
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt Queue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref TopicArn
+      Queues:
+        - !Ref Queue
+
+  SnsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      Region: !Ref TopicRegion
+      TopicArn: !Ref TopicArn
+      RawMessageDelivery: true
+
+Outputs:
+  QueueURL:
+    Value: !Ref Queue
+  QueueArn:
+    Value: !GetAtt Queue.Arn
+  QueueName:
+    Value: !GetAtt Queue.QueueName
+
+  DeadLettersQueueName:
+    Value: !GetAtt DeadLetterQueue.QueueName
+  DeadLettersQueueArn:
+    Value: !GetAtt DeadLetterQueue.Arn

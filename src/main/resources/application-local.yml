@@ -1,0 +1,53 @@
+server:
+  forward-headers-strategy: framework
+  max-http-request-header-size: 20KB # to prevent HTTP 400 caused by huge headers; limited by CloudFront: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-limits.html
+  tomcat:
+    keep-alive-timeout: 128s # the keep-alive-timeout should be bigger than the LB's idle timeout; infinity allows a max value of 120s: https://docs.cloud.scout24.com/products/infinity/infinity-service-resource/#loadbalancerconnectionidletimeout
+  port: 8080
+
+
+spring:
+  application:
+    name: library-service
+  webflux:
+    base-path: farming
+  flyway:
+    enabled: true
+    table: schema_version
+      # user and password are taken from ssm
+    placeholders:
+        schema-name: ${farming.db.schema-name}
+        app-username: ${spring.datasource.username}
+    url: jdbc:postgresql://${DB_ADDRESS}:5432/postgres?currentSchema=${farming.db.schema-name}
+    password: ${spring.datasource.password}
+    user: ${spring.datasource.username}
+    locations: classpath:db/migrations
+  cloud:
+    aws:
+      region:
+        static: eu-central-1
+      sqs:
+        enabled: true
+
+aws:
+  sns:
+    chicken:
+      topic:
+        arn: arn:aws:sns:eu-central-1:124355650827:chicken-event-topic
+    egg:
+      topic:
+        arn: arn:aws:sns:eu-central-1:124355650827:egg-event-topic
+
+
+
+
+logging:
+  level:
+    org.springframework.jdbc.core: DEBUG
+    org.springframework.data.r2dbc.core: DEBUG
+    io.awspring.cloud: DEBUG
+    com.amazonaws: DEBUG
+    io.awspring.cloud.sqs: DEBUG
+    com.amazonaws.services.sqs: DEBUG
+    org.springframework.messaging: DEBUG
+

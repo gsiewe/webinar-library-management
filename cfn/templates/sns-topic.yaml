@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SNS subscription
+
+Parameters:
+  TopicName:
+    Description: Name of the topic to create
+    Type: String
+    MinLength: "1"
+    MaxLength: "256"
+    AllowedPattern: "[a-zA-Z0-9\\-_\\.]*"
+
+Resources:
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+
+  SNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: allow-service-to-publish-to-topic
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - sns:Publish
+            Resource: !Ref SNSTopic
+      Topics:
+        - !Ref SNSTopic
+
+Outputs:
+  TopicArn:
+    Value: !Ref SNSTopic
+  TopicName:
+    Value: !GetAtt SNSTopic.TopicName

@@ -1,0 +1,12 @@
+GRANT USAGE ON SCHEMA ${schema-name} TO ${app-username};
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema-name}
+GRANT EXECUTE ON FUNCTIONS TO ${app-username};
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema-name}
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${app-username};
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ${schema-name}
+GRANT SELECT, USAGE ON SEQUENCES TO ${app-username};
+
+SET search_path TO ${schema-name};
