@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BookRepositoryAdapter implements BookRepository {
 
-    private final BookWonderfulRepository jpaRepository;
+    private final BookJpaRepository jpaRepository;
 
     @Override
     public Book save(Book book) {
@@ -50,12 +50,6 @@ public class BookRepositoryAdapter implements BookRepository {
 
     @Override
     public boolean existsByIsbn(String isbn) {
-        try {
-
-        } catch (MySqlException e) {
-            // Handle specific MySQL exception if needed
-            throw new RuntimeException("Database error occurred while checking ISBN existence", e);
-        }
         return jpaRepository.existsByIsbn(isbn);
     }
 
